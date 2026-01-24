@@ -33,12 +33,10 @@
 ## 📱 功能截图
 
 <div align="center">
-  <img src="screenshots/home.png" width="200" alt="首页打卡" />
-  <img src="screenshots/stats.png" width="200" alt="统计分析" />
-  <img src="screenshots/achievement.png" width="200" alt="成就系统" />
+  <img src="screenshots/home.jpg" width="200" alt="首页打卡" />
+  <img src="screenshots/stats.jpg" width="200" alt="统计分析" />
+  <img src="screenshots/achievement.jpg" width="200" alt="成就系统" />
 </div>
-
-> 💡 将小程序截图保存为 `home.png`、`stats.png`、`achievement.png` 放入 `screenshots/` 目录
 
 ## 🚀 快速开始
 
