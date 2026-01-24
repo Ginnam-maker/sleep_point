@@ -1,0 +1,94 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "睡点儿",
+				"navigationStyle": "custom",
+				"animationType": "pop-in",
+				"animationDuration": 300
+			}
+		},
+		{
+			"path": "pages/stats/stats",
+			"style": {
+				"navigationBarTitleText": "统计",
+				"navigationBarBackgroundColor": "#ffffff",
+				"animationType": "slide-in-right",
+				"animationDuration": 300
+			}
+		},
+		{
+			"path": "pages/achievement/achievement",
+			"style": {
+				"navigationBarTitleText": "成就",
+				"navigationBarBackgroundColor": "#ffffff",
+				"animationType": "slide-in-right",
+				"animationDuration": 300
+			}
+		},
+		{
+			"path": "pages/settings/settings",
+			"style": {
+				"navigationBarTitleText": "设置",
+				"navigationBarBackgroundColor": "#ffffff",
+				"animationType": "slide-in-right",
+				"animationDuration": 300
+			}
+		},
+		{
+			"path": "pages/share/share",
+			"style": {
+				"navigationBarTitleText": "分享海报",
+				"navigationBarBackgroundColor": "#F9FAFB",
+				"animationType": "slide-in-bottom",
+				"animationDuration": 300
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "睡点儿",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#ffffff"
+	},
+	"tabBar": {
+		"color": "#6B7280",
+		"selectedColor": "#000000",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "打卡",
+				"iconPath": "static/tabbar/checkin.png",
+				"selectedIconPath": "static/tabbar/checkin-active.png"
+			},
+			{
+				"pagePath": "pages/stats/stats",
+				"text": "统计",
+				"iconPath": "static/tabbar/stats.png",
+				"selectedIconPath": "static/tabbar/stats-active.png"
+			},
+			{
+				"pagePath": "pages/achievement/achievement",
+				"text": "成就",
+				"iconPath": "static/tabbar/achievement.png",
+				"selectedIconPath": "static/tabbar/achievement-active.png"
+			},
+			{
+				"pagePath": "pages/settings/settings",
+				"text": "设置",
+				"iconPath": "static/tabbar/settings.png",
+				"selectedIconPath": "static/tabbar/settings-active.png"
+			}
+		]
+	}
+}

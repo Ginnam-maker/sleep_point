@@ -1,0 +1,9 @@
+{
+  "name": "sendMessage",
+  "version": "1.0.0",
+  "description": "睡点儿小程序-发送订阅消息云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}
