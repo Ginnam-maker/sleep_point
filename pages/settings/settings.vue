@@ -101,6 +101,13 @@
 				<text class="setting-arrow">›</text>
 			</view>
 		</view>
+		
+		<!-- 退出登录 -->
+		<view v-if="isLoggedIn" class="section">
+			<view class="logout-btn" @click="handleLogout">
+				<text class="logout-text">退出登录</text>
+			</view>
+		</view>
 
 		<!-- 时间选择器 -->
 		<picker-view 
@@ -157,7 +164,8 @@ export default {
 			showTimePickerModal: false,
 			pickerValue: [22, 0],
 			hours: [],
-			minutes: []
+			minutes: [],
+			isLoggedIn: false
 		};
 	},
 	
@@ -207,6 +215,7 @@ export default {
 			this.userInfo = uni.getStorageSync('userInfo') || { nickName: '游客用户' };
 			this.loginMode = uni.getStorageSync('loginMode') || 'guest';
 			this.cloudEnabled = CLOUD_CONFIG.enabled && this.loginMode === 'wechat';
+			this.isLoggedIn = !!uni.getStorageSync('userInfo');
 		},
 		
 		// 显示用户信息
@@ -430,6 +439,41 @@ export default {
 			uni.showToast({
 				title: '已是最新版本',
 				icon: 'success'
+			});
+		},
+		
+		// 退出登录
+		handleLogout() {
+			uni.vibrateShort({ type: 'medium' });
+			
+			uni.showModal({
+				title: '退出登录',
+				content: '退出后将清除登录状态和隐私协议同意记录，下次打开需要重新登录和同意协议。本地打卡数据不会被清除。',
+				confirmText: '确定退出',
+				confirmColor: '#EF4444',
+				success: (res) => {
+					if (res.confirm) {
+						// 清除登录相关信息
+						uni.removeStorageSync('userInfo');
+						uni.removeStorageSync('loginMode');
+						uni.removeStorageSync('privacyAgreed');
+						uni.removeStorageSync('hasShownLoginGuide');
+						
+						uni.showToast({
+							title: '已退出登录',
+							icon: 'success'
+						});
+						
+						uni.vibrateLong();
+						
+						// 延迟跳转到登录页
+						setTimeout(() => {
+							uni.reLaunch({
+								url: '/pages/login/login'
+							});
+						}, 1000);
+					}
+				}
 			});
 		}
 	}
@@ -661,5 +705,27 @@ export default {
 	to {
 		transform: translateY(0);
 	}
+}
+
+/* 退出登录按钮 */
+.logout-btn {
+	background-color: #ffffff;
+	border-radius: 16rpx;
+	padding: 28rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+	margin-top: 32rpx;
+}
+
+.logout-btn:active {
+	opacity: 0.7;
+}
+
+.logout-text {
+	font-size: 30rpx;
+	color: #EF4444;
+	font-weight: 600;
 }
 </style>

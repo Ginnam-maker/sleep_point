@@ -73,13 +73,41 @@ export default {
 		}
 	},
 	onLoad() {
-		this.loadAchievements();
+		this.checkLoginAndLoad();
 	},
 	onShow() {
 		// 每次显示页面时刷新数据
-		this.loadAchievements();
+		this.checkLoginAndLoad();
 	},
 	methods: {
+		// 检查登录状态并加载
+		checkLoginAndLoad() {
+			const userInfo = uni.getStorageSync('userInfo');
+			if (!userInfo) {
+				// 未登录，显示引导
+				uni.showModal({
+					title: '成就功能需要登录',
+					content: '登录后可以解锁专属成就，记录你的打卡里程碑。是否前往登录？',
+					confirmText: '去登录',
+					cancelText: '稍后再说',
+					success: (res) => {
+						if (res.confirm) {
+							uni.navigateTo({
+								url: '/pages/login/login'
+							});
+						} else {
+							// 返回上一页
+							uni.switchTab({
+								url: '/pages/index/index'
+							});
+						}
+					}
+				});
+				return;
+			}
+			this.loadAchievements();
+		},
+		
 		// 加载成就数据
 		loadAchievements() {
 			const unlockedAchievements = getAchievements();

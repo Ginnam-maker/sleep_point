@@ -4,11 +4,10 @@
 		<view class="greeting-section">
 			<view class="greeting-header">
 				<text class="greeting-text">{{ greetingText }}</text>
-				<!-- 测试模式按钮 - 已隐藏
-				<view v-if="todayCheckin" class="reset-btn" @click="resetTodayCheckin">
-					<text class="reset-icon">🔄</text>
+				<!-- 未登录提示 -->
+				<view v-if="!isLoggedIn" class="login-tip" @click="goToLogin">
+					<text class="login-tip-text">登录</text>
 				</view>
-				-->
 			</view>
 			<view class="quote-card">
 				<text class="quote-text">{{ currentQuote }}</text>
@@ -57,6 +56,25 @@
 				<view class="success-emoji">{{ getMoodEmoji(selectedMood) }}</view>
 			</view>
 		</view>
+		
+		<!-- 登录引导弹窗 -->
+		<view v-if="showLoginGuide" class="login-guide-modal">
+			<view class="guide-overlay" @click="closeLoginGuide"></view>
+			<view class="guide-content">
+				<view class="guide-icon">🎉</view>
+				<text class="guide-title">体验不错吧？</text>
+				<text class="guide-text">登录后可以：</text>
+				<view class="guide-features">
+					<text class="feature-item">📊 查看打卡统计</text>
+					<text class="feature-item">🏆 解锁专属成就</text>
+					<text class="feature-item">☁️ 云端同步数据</text>
+				</view>
+				<view class="guide-buttons">
+					<button class="guide-btn secondary" @click="closeLoginGuide">稍后再说</button>
+					<button class="guide-btn primary" @click="goToLogin">立即登录</button>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -70,6 +88,9 @@ export default {
 			selectedMood: '',
 			isAnimating: false,
 			showSuccessAnimation: false,
+			isLoggedIn: false, // 登录状态
+			showLoginGuide: false, // 显示登录引导
+			checkinCount: 0, // 打卡次数
 			moodList: [
 				{ id: 'happy', emoji: '😊', label: '高兴' },
 				{ id: 'content', emoji: '😌', label: '满足' },
@@ -100,9 +121,20 @@ export default {
 	onLoad() {
 		this.initPage();
 	},
+	onShow() {
+		// 每次显示页面时检查登录状态
+		this.checkLoginStatus();
+	},
 	methods: {
+		// 检查登录状态
+		checkLoginStatus() {
+			const userInfo = uni.getStorageSync('userInfo');
+			this.isLoggedIn = !!userInfo;
+		},
+		
 		// 初始化页面
 		initPage() {
+			this.checkLoginStatus();
 			this.setGreeting();
 			this.setRandomQuote();
 			this.checkTodayCheckin();
@@ -196,10 +228,55 @@ export default {
 			setTimeout(() => {
 				this.showSuccessAnimation = false;
 				this.isAnimating = false;
+				
+				// 检查是否需要显示登录引导
+				this.checkShowLoginGuide();
 			}, 2000);
 			
 			// 检查成就解锁
 			this.checkNewAchievements();
+		},
+		
+		// 检查是否显示登录引导
+		checkShowLoginGuide() {
+			// 如果已登录，不显示
+			if (this.isLoggedIn) {
+				return;
+			}
+			
+			// 检查是否已经显示过引导
+			const hasShownGuide = uni.getStorageSync('hasShownLoginGuide');
+			if (hasShownGuide) {
+				return;
+			}
+			
+			// 统计打卡次数
+			let checkinCount = 0;
+			const keys = uni.getStorageInfoSync().keys;
+			keys.forEach(key => {
+				if (key.startsWith('checkin_')) {
+					checkinCount++;
+				}
+			});
+			
+			// 打卡2次后显示登录引导
+			if (checkinCount >= 2) {
+				this.showLoginGuide = true;
+				uni.setStorageSync('hasShownLoginGuide', true);
+			}
+		},
+		
+		// 关闭登录引导
+		closeLoginGuide() {
+			this.showLoginGuide = false;
+			uni.vibrateShort({ type: 'light' });
+		},
+		
+		// 跳转到登录页
+		goToLogin() {
+			uni.navigateTo({
+				url: '/pages/login/login'
+			});
 		},
 		
 		// 隐藏成功动画
@@ -595,5 +672,129 @@ export default {
 	50% {
 		transform: translateY(-20rpx);
 	}
+}
+
+/* 登录提示按钮 */
+.login-tip {
+	background-color: rgba(255, 255, 255, 0.2);
+	padding: 8rpx 24rpx;
+	border-radius: 20rpx;
+	backdrop-filter: blur(10rpx);
+}
+
+.login-tip-text {
+	font-size: 24rpx;
+	color: #ffffff;
+	font-weight: 500;
+}
+
+/* 登录引导弹窗 */
+.login-guide-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9998;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.guide-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+
+.guide-content {
+	position: relative;
+	width: 600rpx;
+	background-color: #ffffff;
+	border-radius: 32rpx;
+	padding: 48rpx;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	animation: guide-show 0.4s ease-out;
+}
+
+@keyframes guide-show {
+	from {
+		opacity: 0;
+		transform: translateY(40rpx) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.guide-icon {
+	font-size: 120rpx;
+	margin-bottom: 24rpx;
+}
+
+.guide-title {
+	font-size: 40rpx;
+	font-weight: bold;
+	color: #111827;
+	margin-bottom: 16rpx;
+}
+
+.guide-text {
+	font-size: 28rpx;
+	color: #6B7280;
+	margin-bottom: 24rpx;
+}
+
+.guide-features {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 16rpx;
+	margin-bottom: 40rpx;
+}
+
+.feature-item {
+	font-size: 28rpx;
+	color: #111827;
+	line-height: 1.6;
+	padding-left: 16rpx;
+}
+
+.guide-buttons {
+	width: 100%;
+	display: flex;
+	gap: 16rpx;
+}
+
+.guide-btn {
+	flex: 1;
+	height: 88rpx;
+	border-radius: 16rpx;
+	border: none;
+	font-size: 30rpx;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.guide-btn.secondary {
+	background-color: #F3F4F6;
+	color: #6B7280;
+}
+
+.guide-btn.primary {
+	background-color: #000000;
+	color: #ffffff;
+}
+
+.guide-btn:active {
+	opacity: 0.8;
 }
 </style>

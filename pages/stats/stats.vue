@@ -260,12 +260,66 @@ export default {
 	methods: {
 		// 加载数据
 		loadData() {
-			this.checkins = getAllCheckins();
+			const allCheckins = getAllCheckins();
+			const userInfo = uni.getStorageSync('userInfo');
+			
+			// 未登录用户限制只能看7天数据
+			if (!userInfo) {
+				const sevenDaysAgo = new Date();
+				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+				const sevenDaysAgoStr = this.formatDate(sevenDaysAgo);
+				
+				this.checkins = allCheckins.filter(checkin => {
+					return checkin.date >= sevenDaysAgoStr;
+				});
+				
+				// 提示用户登录可查看完整数据
+				if (allCheckins.length > this.checkins.length) {
+					// 有超过7天的数据，显示提示
+					this.showLoginTip();
+				}
+			} else {
+				this.checkins = allCheckins;
+			}
+			
 			this.calculateMetrics();
 			this.initCalendar();
 			this.calculateMoodStats();
 			this.prepareMoodChartData();
 			this.prepareTrendChartData();
+		},
+		
+		// 显示登录提示
+		showLoginTip() {
+			// 检查是否已经显示过提示
+			const hasShownTip = uni.getStorageSync('hasShownStatsTip');
+			if (hasShownTip) return;
+			
+			setTimeout(() => {
+				uni.showModal({
+					title: '试用模式限制',
+					content: '当前为试用模式，仅显示最近7天数据。登录后可查看完整历史数据和更多统计功能。',
+					confirmText: '去登录',
+					cancelText: '稍后再说',
+					success: (res) => {
+						if (res.confirm) {
+							uni.navigateTo({
+								url: '/pages/login/login'
+							});
+						}
+						// 标记已显示
+						uni.setStorageSync('hasShownStatsTip', true);
+					}
+				});
+			}, 500);
+		},
+		
+		// 格式化日期为YYYY-MM-DD
+		formatDate(date) {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
 		},
 		
 		// 计算核心指标

@@ -27,21 +27,8 @@ export default {
 		},
 		
 		checkLogin() {
-			// 获取当前页面
-			const pages = getCurrentPages();
-			const currentPage = pages[pages.length - 1];
-			const currentRoute = currentPage ? currentPage.route : '';
-			
-			// 如果不是登录页，检查是否已登录
-			if (currentRoute !== 'pages/login/login') {
-				const userInfo = uni.getStorageSync('userInfo');
-				if (!userInfo) {
-					// 未登录，跳转到登录页
-					uni.reLaunch({
-						url: '/pages/login/login'
-					});
-				}
-			}
+			// 试用模式：允许所有页面访问，不强制登录
+			// 具体功能限制在各个页面内部实现
 		}
 	}
 }
