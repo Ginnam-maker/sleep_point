@@ -18,6 +18,18 @@
 			</view>
 			<text class="user-arrow">›</text>
 		</view>
+		
+		<!-- 升级为正式用户按钮（仅游客模式显示） -->
+		<view v-if="loginMode === 'guest'" class="upgrade-section">
+			<view class="upgrade-btn" @click="goToLogin">
+				<text class="upgrade-icon">🚀</text>
+				<view class="upgrade-info">
+					<text class="upgrade-title">升级为正式用户</text>
+					<text class="upgrade-desc">登录后将保留您的所有打卡数据</text>
+				</view>
+				<text class="upgrade-arrow">›</text>
+			</view>
+		</view>
 
 		<!-- 提醒设置 -->
 		<view class="section">
@@ -242,6 +254,23 @@ export default {
 					showCancel: false
 				});
 			}
+		},
+		
+		// 跳转到登录页（升级为正式用户）
+		goToLogin() {
+			uni.vibrateShort({ type: 'medium' });
+			uni.showModal({
+				title: '升级为正式用户',
+				content: '登录后将保留您的所有打卡数据，并解锁完整功能和云端同步。',
+				confirmText: '立即登录',
+				success: (res) => {
+					if (res.confirm) {
+						uni.reLaunch({
+							url: '/pages/login/login'
+						});
+					}
+				}
+			});
 		},
 		
 		// 云端同步
@@ -562,6 +591,55 @@ export default {
 .user-arrow {
 	font-size: 48rpx;
 	color: #D1D5DB;
+}
+
+/* 升级为正式用户按钮区域 */
+.upgrade-section {
+	margin-bottom: 24rpx;
+}
+
+.upgrade-btn {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border-radius: 24rpx;
+	padding: 32rpx;
+	display: flex;
+	align-items: center;
+	gap: 20rpx;
+	box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+	transition: all 0.3s;
+}
+
+.upgrade-btn:active {
+	opacity: 0.85;
+	transform: translateY(2rpx);
+	box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.2);
+}
+
+.upgrade-icon {
+	font-size: 48rpx;
+}
+
+.upgrade-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6rpx;
+}
+
+.upgrade-title {
+	font-size: 32rpx;
+	font-weight: 600;
+	color: #ffffff;
+}
+
+.upgrade-desc {
+	font-size: 24rpx;
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.upgrade-arrow {
+	font-size: 48rpx;
+	color: rgba(255, 255, 255, 0.6);
 }
 
 /* 设置区块 */

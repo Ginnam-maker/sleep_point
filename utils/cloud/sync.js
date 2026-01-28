@@ -121,6 +121,37 @@ export async function uploadToCloud() {
 }
 
 /**
+ * 保存用户信息到云端
+ * @param {Object} userInfo - 用户信息对象
+ * @param {string} userInfo.nickName - 用户昵称
+ * @param {string} userInfo.avatarUrl - 用户头像URL
+ * @param {string} [userInfo.phoneNumber] - 用户手机号（可选）
+ * @returns {Promise<Object>} 返回保存结果
+ */
+export async function saveUserInfoToCloud(userInfo) {
+  if (!CLOUD_CONFIG.enabled) {
+    return { code: -1, message: '云开发未启用' };
+  }
+  
+  try {
+    const result = await callCloudFunction('saveUserInfo', {
+      nickName: userInfo.nickName,
+      avatarUrl: userInfo.avatarUrl,
+      phoneNumber: userInfo.phoneNumber || ''
+    });
+    
+    if (result.code === 0) {
+      console.log('用户信息已保存到云端:', result);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('保存用户信息到云端失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 获取今天日期字符串
  */
 function getTodayDate() {
@@ -134,5 +165,6 @@ function getTodayDate() {
 export default {
   cloudCheckin,
   syncFromCloud,
-  uploadToCloud
+  uploadToCloud,
+  saveUserInfoToCloud
 };

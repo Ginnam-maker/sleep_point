@@ -1,10 +1,5 @@
 <template>
 	<view class="login-container">
-		<!-- 关闭按钮 -->
-		<view class="close-btn" @click="goBack">
-			<text class="close-icon">×</text>
-		</view>
-		
 		<!-- 顶部装饰 -->
 		<view class="header-decoration">
 			<text class="app-icon">🌙</text>
@@ -64,10 +59,12 @@
 			:disabled="!canLogin"
 		>
 			<text class="btn-text">{{ isLoading ? '登录中...' : '完成登录' }}</text>
-			<!-- 试用模式说明 -->
-			<view class="trial-tip">
-				<text class="trial-text">💡 试用模式可体验打卡和7天统计，登录后解锁完整功能</text>
-			</view>
+		</button>
+		
+		<!-- 试用按钮 -->
+		<button class="trial-btn" @click="startTrial">
+			<text class="trial-btn-text">不登录,立刻试用</text>
+		</button>
 		</view>
 		
 		<!-- 底部说明 - 带勾选框 -->
@@ -282,32 +279,6 @@ export default {
 	padding: 64rpx 48rpx;
 }
 
-/* 关闭按钮 */
-.close-btn {
-	position: absolute;
-	top: 48rpx;
-	right: 48rpx;
-	width: 64rpx;
-	height: 64rpx;
-	background-color: rgba(255, 255, 255, 0.2);
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 10;
-	backdrop-filter: blur(10rpx);
-}
-
-.close-btn:active {
-	opacity: 0.7;
-}
-
-.close-icon {
-	font-size: 48rpx;
-	color: #ffffff;
-	line-height: 1;
-}
-
 /* 顶部装饰 */
 .header-decoration {
 	display: flex;
@@ -344,6 +315,8 @@ export default {
 	animation: fade-in-up 0.6s ease-out 0.2s both;
 }
 
+/* ... 上接 .login-card 样式 ... */
+
 .card-content {
 	display: flex;
 	flex-direction: column;
@@ -353,12 +326,26 @@ export default {
 
 .welcome-text {
 	font-size: 40rpx;
-	fo用户信息输入区域 */
+	font-weight: bold;
+	color: #111827;
+	margin-bottom: 32rpx;
+}
+
+.feature-list {
+	font-size: 28rpx;
+	color: #6B7280;
+	line-height: 2;
+	width: 100%;
+	text-align: left;
+}
+
+/* 用户信息输入区域 */
 .user-info-section {
 	display: flex;
 	flex-direction: column;
 	gap: 24rpx;
 	margin-bottom: 48rpx;
+	width: 100%; /* 确保宽度 */
 }
 
 /* 头像选择 */
@@ -391,7 +378,7 @@ export default {
 	width: 100%;
 	height: 100%;
 	background-color: #F3F4F6;
-	border: 2rpx dashed #D1D5DB;
+	border: 0rpx dashed #D1D5DB;
 	border-radius: 50%;
 	display: flex;
 	flex-direction: column;
@@ -431,18 +418,6 @@ export default {
 	background-color: #ffffff;
 }
 
-/* nt-weight: bold;
-	color: #111827;
-	margin-bottom: 32rpx;
-}
-
-.feature-list {
-	font-size: 28rpx;
-	color: #6B7280;
-	line-height: 2;
-	width: 100%;
-	text-align: left;
-}
 
 /* 登录按钮 */
 .login-btn {
@@ -462,7 +437,8 @@ export default {
 }
 
 .login-btn[disabled] {
-	opacity: 0.4;
+	background-color: #D1D5DB;
+	opacity: 1;
 }
 
 .btn-text {
@@ -484,31 +460,18 @@ export default {
 	box-sizing: border-box;
 }
 
+.trial-btn::after {
+	border: none;
+}
+
 .trial-btn:active {
 	background-color: #F9FAFB;
-	opacity: 0.8;
 }
 
 .trial-btn-text {
-	font-size: 32rpx;
-	color: #374151;
-	font-weight: 600;
-}
-
-/* 试用模式提示 */
-.trial-tip {
-	margin-top: 24rpx;
-	padding: 16rpx 24rpx;
-	background-color: #F0F9FF;
-	border-radius: 12rpx;
-	border: 1rpx solid #BAE6FD;
-}
-
-.trial-text {
-	font-size: 22rpx;
-	color: #0369A1;
-	line-height: 1.6;
-	text-align: center;
+	font-size: 26rpx;
+	color: #9CA3AF;
+	font-weight: 400;
 }
 
 /* 底部协议区域 */
