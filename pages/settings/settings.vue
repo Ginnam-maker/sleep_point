@@ -256,7 +256,7 @@ export default {
 		getMoodLabel(moodId) {
 			const moodMap = {
 				'happy': '😊 高兴',
-				'content': '😌 满足',
+				'content': '🤗 满足',
 				'sad': '😢 难过',
 				'tired': '😴 疲惫',
 				'angry': '😠 愤怒',
