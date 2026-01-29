@@ -86,7 +86,7 @@
 
 <script>
 import { initCloud, CLOUD_CONFIG } from '@/utils/cloud/config.js';
-import { syncFromCloud } from '@/utils/cloud/sync.js';
+import { syncFromCloud, saveUserInfoToCloud } from '@/utils/cloud/sync.js';
 
 export default {
 	data() {
@@ -199,8 +199,17 @@ export default {
 				uni.setStorageSync('userInfo', userInfo);
 				uni.setStorageSync('loginMode', 'wechat');
 				
-				// 如果启用了云开发，同步数据
+				// 如果启用了云开发，先保存用户信息到云端，再同步数据
 				if (CLOUD_CONFIG.enabled) {
+					const result = await saveUserInfoToCloud(userInfo);
+					if (result.code === 0) {
+						console.log('用户信息已保存到云端');
+						// 标记已同步
+						uni.setStorageSync('cloudUserInfoSynced', true);
+					} else {
+						console.warn('保存用户信息到云端失败:', result.message);
+					}
+					
 					await syncFromCloud();
 				}
 				

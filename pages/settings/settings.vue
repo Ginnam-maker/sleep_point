@@ -7,7 +7,7 @@
 		</view>
 		
 		<!-- 用户信息卡片 -->
-		<view class="user-card" @click="showUserInfo">
+		<view class="user-card" @click="showUserInfo" @longpress="editUserInfo">
 			<view class="user-avatar">
 				<image v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" class="avatar-img" />
 				<text v-else class="avatar-text">👤</text>
@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import { syncFromCloud, uploadToCloud } from '@/utils/cloud/sync.js';
+import { syncFromCloud, uploadToCloud, saveUserInfoToCloud } from '@/utils/cloud/sync.js';
 import { CLOUD_CONFIG } from '@/utils/cloud/config.js';
 
 export default {
@@ -153,6 +153,94 @@ export default {
 					title: '用户信息',
 					content: `昵称：${this.userInfo.nickName}\n登录方式：${this.loginModeText}`,
 					showCancel: false
+				});
+			}
+		},
+		
+		// 编辑用户信息
+		async editUserInfo() {
+			if (this.loginMode !== 'wechat') {
+				return; // 仅正式用户可编辑
+			}
+			
+			uni.vibrateShort({ type: 'medium' });
+			
+			// 编辑昵称
+			uni.showModal({
+				title: '修改昵称',
+				editable: true,
+				placeholderText: this.userInfo.nickName,
+				success: async (res) => {
+					if (res.confirm && res.content && res.content.trim()) {
+						const newNickName = res.content.trim();
+						
+						// 询问是否修改头像
+						uni.showModal({
+							title: '修改头像',
+							content: '是否需要修改头像URL？',
+							confirmText: '修改',
+							cancelText: '不修改',
+							success: async (res2) => {
+								if (res2.confirm) {
+									// 修改头像
+									uni.showModal({
+										title: '修改头像URL',
+										editable: true,
+										placeholderText: this.userInfo.avatarUrl,
+										success: async (res3) => {
+											if (res3.confirm && res3.content && res3.content.trim()) {
+												await this.updateUserInfo(newNickName, res3.content.trim());
+											} else {
+												await this.updateUserInfo(newNickName, this.userInfo.avatarUrl);
+											}
+										}
+									});
+								} else {
+									// 只修改昵称
+									await this.updateUserInfo(newNickName, this.userInfo.avatarUrl);
+								}
+							}
+						});
+					}
+				}
+			});
+		},
+		
+		// 更新用户信息
+		async updateUserInfo(nickName, avatarUrl) {
+			uni.showLoading({ title: '保存中...' });
+			
+			const newUserInfo = {
+				nickName: nickName,
+				avatarUrl: avatarUrl
+			};
+			
+			// 更新本地存储
+			uni.setStorageSync('userInfo', newUserInfo);
+			this.userInfo = newUserInfo;
+			
+			// 同步到云端
+			if (CLOUD_CONFIG.enabled) {
+				const result = await saveUserInfoToCloud(newUserInfo);
+				if (result.code === 0) {
+					uni.hideLoading();
+					uni.showToast({
+						title: '修改成功',
+						icon: 'success'
+					});
+				} else {
+					uni.hideLoading();
+					console.warn('保存用户信息到云端失败:', result.message);
+					uni.showToast({
+						title: '本地已保存，云端同步失败',
+						icon: 'none'
+					});
+				}
+			} else {
+				uni.hideLoading();
+				uni.showToast({
+					title: '修改成功',
+					icon: 'success'
 				});
 			}
 		},
@@ -323,6 +411,7 @@ export default {
 						uni.removeStorageSync('loginMode');
 						uni.removeStorageSync('privacyAgreed');
 						uni.removeStorageSync('hasShownLoginGuide');
+						uni.removeStorageSync('cloudUserInfoSynced');
 						
 						uni.showToast({
 							title: '已退出登录',

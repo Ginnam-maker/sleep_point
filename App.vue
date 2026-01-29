@@ -1,5 +1,6 @@
 <script>
-import { initCloud } from '@/utils/cloud/config.js';
+import { initCloud, CLOUD_CONFIG } from '@/utils/cloud/config.js';
+import { saveUserInfoToCloud } from '@/utils/cloud/sync.js';
 
 export default {
 	onLaunch: function() {
@@ -26,9 +27,28 @@ export default {
 			console.log('系统信息:', systemInfo);
 		},
 		
-		checkLogin() {
+		async checkLogin() {
 			// 试用模式：允许所有页面访问，不强制登录
 			// 具体功能限制在各个页面内部实现
+			
+			// 兜底逻辑：检查已登录但未同步到云端的用户
+			const userInfo = uni.getStorageSync('userInfo');
+			const cloudUserInfoSynced = uni.getStorageSync('cloudUserInfoSynced');
+			
+			if (userInfo && CLOUD_CONFIG.enabled && !cloudUserInfoSynced) {
+				console.log('检测到未同步的用户信息，开始同步到云端...');
+				try {
+					const result = await saveUserInfoToCloud(userInfo);
+					if (result.code === 0) {
+						console.log('用户信息兜底同步成功');
+						uni.setStorageSync('cloudUserInfoSynced', true);
+					} else {
+						console.warn('用户信息兜底同步失败:', result.message);
+					}
+				} catch (error) {
+					console.warn('用户信息兜底同步异常:', error);
+				}
+			}
 		}
 	}
 }

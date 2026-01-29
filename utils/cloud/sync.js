@@ -147,7 +147,7 @@ export async function saveUserInfoToCloud(userInfo) {
     return result;
   } catch (error) {
     console.error('保存用户信息到云端失败:', error);
-    throw error;
+    return { code: -999, message: error.message || '未知错误' };
   }
 }
 
