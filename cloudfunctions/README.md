@@ -108,31 +108,7 @@
 
 ---
 
-### 2. unlockAchievement - 解锁成就
-
-**路径**: `cloudfunctions/unlockAchievement/index.js`
-
-**输入**:
-```json
-{
-  "achievementId": "streak_7"
-}
-```
-
-**输出**:
-```json
-{
-  "code": 0,
-  "message": "成就已解锁",
-  "data": {
-    "_id": "achievement_id"
-  }
-}
-```
-
----
-
-### 3. updateCheckin - 修改打卡记录
+### 2. updateCheckin - 修改打卡记录
 
 **路径**: `cloudfunctions/updateCheckin/index.js`
 
@@ -149,27 +125,6 @@
 {
   "code": 0,
   "message": "修改成功"
-}
-```
-
----
-
-### 4. getStats - 获取统计数据
-
-**路径**: `cloudfunctions/getStats/index.js`
-
-**输入**: 无
-
-**输出**:
-```json
-{
-  "code": 0,
-  "data": {
-    "totalDays": 30,
-    "streakDays": 7,
-    "checkins": [],
-    "achievements": []
-  }
 }
 ```
 
