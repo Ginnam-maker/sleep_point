@@ -126,15 +126,9 @@ export function saveSettings(settings) {
 export function getSettings() {
 	try {
 		const data = uni.getStorageSync(STORAGE_KEYS.SETTINGS);
-		return data ? JSON.parse(data) : {
-			reminderTime: '22:30',
-			reminderEnabled: true
-		};
+		return data ? JSON.parse(data) : {};
 	} catch (e) {
 		console.error('获取设置失败:', e);
-		return {
-			reminderTime: '22:30',
-			reminderEnabled: true
-		};
+		return {};
 	}
 }

@@ -12,10 +12,7 @@ const CLOUD_CONFIG = {
   enabled: false, // 设为 true 启用云开发
   
   // 是否开启调试模式
-  debug: true,
-  
-  // 订阅消息模板ID（需要在微信公众平台申请后填入）
-  subscribeMessageTemplateId: ''
+  debug: true
 };
 
 // 初始化云开发
@@ -107,17 +104,11 @@ function callFunction(name, data = {}) {
   });
 }
 
-// 获取订阅消息模板ID
-function getSubscribeTemplateId() {
-  return CLOUD_CONFIG.subscribeMessageTemplateId;
-}
-
 // 导出配置和方法
 export default {
   ...CLOUD_CONFIG,
   initCloud,
   isCloudAvailable,
   getDB,
-  callFunction,
-  getSubscribeTemplateId
+  callFunction
 };

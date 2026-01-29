@@ -31,35 +31,6 @@
 			</view>
 		</view>
 
-		<!-- 提醒设置 -->
-		<view class="section">
-			<view class="section-header">
-				<text class="section-icon">⏰</text>
-				<text class="section-title">睡眠提醒</text>
-			</view>
-			
-			<view class="setting-item" @click="toggleReminder">
-				<view class="setting-info">
-					<text class="setting-label">定时提醒</text>
-					<text class="setting-desc">每日定时推送睡眠提醒</text>
-				</view>
-				<switch 
-					:checked="reminderEnabled" 
-					@change="handleReminderToggle"
-					color="#000000"
-					style="transform: scale(0.9);"
-				/>
-			</view>
-			
-			<view v-if="reminderEnabled" class="setting-item" @click="showTimePicker">
-				<view class="setting-info">
-					<text class="setting-label">提醒时间</text>
-					<text class="setting-desc">{{ reminderTime }}</text>
-				</view>
-				<text class="setting-arrow">›</text>
-			</view>
-		</view>
-
 		<!-- 数据管理 -->
 		<view class="section">
 			<view class="section-header">
@@ -120,44 +91,6 @@
 				<text class="logout-text">退出登录</text>
 			</view>
 		</view>
-
-		<!-- 时间选择器 -->
-		<picker-view 
-			v-if="showTimePickerModal" 
-			class="time-picker-modal"
-			:value="pickerValue"
-			@change="onTimeChange"
-		>
-			<picker-view-column>
-				<view v-for="hour in hours" :key="hour" class="picker-item">{{ hour }}</view>
-			</picker-view-column>
-			<picker-view-column>
-				<view v-for="minute in minutes" :key="minute" class="picker-item">{{ minute }}</view>
-			</picker-view-column>
-		</picker-view>
-		
-		<!-- 时间选择器遮罩和按钮 -->
-		<view v-if="showTimePickerModal" class="picker-overlay" @click="hideTimePicker">
-			<view class="picker-container" @click.stop>
-				<view class="picker-header">
-					<text class="picker-cancel" @click="hideTimePicker">取消</text>
-					<text class="picker-title">选择提醒时间</text>
-					<text class="picker-confirm" @click="confirmTime">确定</text>
-				</view>
-				<picker-view 
-					class="picker-view"
-					:value="pickerValue"
-					@change="onTimeChange"
-				>
-					<picker-view-column>
-						<view v-for="hour in hours" :key="hour" class="picker-item">{{ hour }}时</view>
-					</picker-view-column>
-					<picker-view-column>
-						<view v-for="minute in minutes" :key="minute" class="picker-item">{{ minute }}分</view>
-					</picker-view-column>
-				</picker-view>
-			</view>
-		</view>
 	</view>
 </template>
 
@@ -171,24 +104,15 @@ export default {
 			userInfo: {},
 			loginMode: 'guest',
 			cloudEnabled: false,
-			reminderEnabled: false,
-			reminderTime: '22:00',
-			showTimePickerModal: false,
-			pickerValue: [22, 0],
-			hours: [],
-			minutes: [],
 			isLoggedIn: false
 		};
 	},
 	
 	onLoad() {
-		this.initTimePicker();
-		this.loadSettings();
 		this.loadUserInfo();
 	},
 	
 	onShow() {
-		this.loadSettings();
 		this.loadUserInfo();
 	},
 	
@@ -199,29 +123,6 @@ export default {
 	},
 	
 	methods: {
-		// 初始化时间选择器数据
-		initTimePicker() {
-			// 生成小时数组 0-23
-			for (let i = 0; i < 24; i++) {
-				this.hours.push(String(i).padStart(2, '0'));
-			}
-			// 生成分钟数组 0-59
-			for (let i = 0; i < 60; i++) {
-				this.minutes.push(String(i).padStart(2, '0'));
-			}
-		},
-		
-		// 加载设置
-		loadSettings() {
-			const settings = uni.getStorageSync('app_settings') || {};
-			this.reminderEnabled = settings.reminderEnabled || false;
-			this.reminderTime = settings.reminderTime || '22:00';
-			
-			// 解析时间到选择器
-			const [hour, minute] = this.reminderTime.split(':');
-			this.pickerValue = [parseInt(hour), parseInt(minute)];
-		},
-		
 		// 加载用户信息
 		loadUserInfo() {
 			this.userInfo = uni.getStorageSync('userInfo') || { nickName: '游客用户' };
@@ -301,68 +202,6 @@ export default {
 			}
 		},
 		
-		// 保存设置
-		saveSettings() {
-			const settings = {
-				reminderEnabled: this.reminderEnabled,
-				reminderTime: this.reminderTime
-			};
-			uni.setStorageSync('app_settings', settings);
-		},
-		
-		// 切换提醒开关
-		handleReminderToggle(e) {
-			this.reminderEnabled = e.detail.value;
-			this.saveSettings();
-			
-			uni.vibrateShort({ type: 'light' });
-			
-			if (this.reminderEnabled) {
-				uni.showToast({
-					title: '已开启提醒',
-					icon: 'success'
-				});
-			} else {
-				uni.showToast({
-					title: '已关闭提醒',
-					icon: 'none'
-				});
-			}
-		},
-		
-		// 显示时间选择器
-		showTimePicker() {
-			this.showTimePickerModal = true;
-			uni.vibrateShort({ type: 'light' });
-		},
-		
-		// 隐藏时间选择器
-		hideTimePicker() {
-			this.showTimePickerModal = false;
-			uni.vibrateShort({ type: 'light' });
-		},
-		
-		// 时间变化
-		onTimeChange(e) {
-			this.pickerValue = e.detail.value;
-		},
-		
-		// 确认时间选择
-		confirmTime() {
-			const hour = this.hours[this.pickerValue[0]];
-			const minute = this.minutes[this.pickerValue[1]];
-			this.reminderTime = `${hour}:${minute}`;
-			this.saveSettings();
-			this.hideTimePicker();
-			
-			uni.showToast({
-				title: `已设置为 ${this.reminderTime}`,
-				icon: 'success'
-			});
-			
-			uni.vibrateShort({ type: 'medium' });
-		},
-		
 		// 导出数据
 		exportData() {
 			uni.vibrateShort({ type: 'light' });
@@ -439,9 +278,6 @@ export default {
 					if (res.confirm) {
 						// 清除所有数据
 						uni.clearStorageSync();
-						
-						// 保留设置
-						this.saveSettings();
 						
 						uni.showToast({
 							title: '数据已清除',
@@ -702,87 +538,6 @@ export default {
 	font-size: 48rpx;
 	color: #D1D5DB;
 	margin-left: 16rpx;
-}
-
-/* 时间选择器遮罩 */
-.picker-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.5);
-	display: flex;
-	align-items: flex-end;
-	z-index: 9999;
-	animation: fade-in 0.3s;
-}
-
-.picker-container {
-	width: 100%;
-	background-color: #FFFFFF;
-	border-radius: 24rpx 24rpx 0 0;
-	animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.picker-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 24rpx 32rpx;
-	border-bottom: 1px solid #F3F4F6;
-}
-
-.picker-title {
-	font-size: 32rpx;
-	font-weight: 600;
-	color: #111827;
-}
-
-.picker-cancel,
-.picker-confirm {
-	font-size: 28rpx;
-	padding: 8rpx 16rpx;
-}
-
-.picker-cancel {
-	color: #6B7280;
-}
-
-.picker-confirm {
-	color: #000000;
-	font-weight: 600;
-}
-
-.picker-view {
-	height: 400rpx;
-}
-
-.picker-item {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 32rpx;
-	color: #111827;
-}
-
-/* 动画 */
-@keyframes fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-@keyframes slide-up {
-	from {
-		transform: translateY(100%);
-	}
-	to {
-		transform: translateY(0);
-	}
 }
 
 /* 退出登录按钮 */
