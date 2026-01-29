@@ -7,7 +7,7 @@
 		</view>
 		
 		<!-- 用户信息卡片 -->
-		<view class="user-card" @click="showUserInfo" @longpress="editUserInfo">
+		<view class="user-card" @click="editUserInfo">
 			<view class="user-avatar">
 				<image v-if="userInfo.avatarUrl" :src="userInfo.avatarUrl" class="avatar-img" />
 				<text v-else class="avatar-text">👤</text>
@@ -97,6 +97,7 @@
 <script>
 import { syncFromCloud, uploadToCloud, saveUserInfoToCloud } from '@/utils/cloud/sync.js';
 import { CLOUD_CONFIG } from '@/utils/cloud/config.js';
+import { getAllCheckins } from '@/utils/storage.js';
 
 export default {
 	data() {
@@ -131,39 +132,13 @@ export default {
 			this.isLoggedIn = !!uni.getStorageSync('userInfo');
 		},
 		
-		// 显示用户信息
-		showUserInfo() {
-			uni.vibrateShort({ type: 'light' });
-			
-			if (this.loginMode === 'guest') {
-				uni.showModal({
-					title: '切换登录方式',
-					content: '当前使用本地模式，是否切换到微信登录以启用云同步？',
-					confirmText: '去登录',
-					success: (res) => {
-						if (res.confirm) {
-							uni.reLaunch({
-								url: '/pages/login/login'
-							});
-						}
-					}
-				});
-			} else {
-				uni.showModal({
-					title: '用户信息',
-					content: `昵称：${this.userInfo.nickName}\n登录方式：${this.loginModeText}`,
-					showCancel: false
-				});
-			}
-		},
-		
 		// 编辑用户信息
 		async editUserInfo() {
 			if (this.loginMode !== 'wechat') {
 				return; // 仅正式用户可编辑
 			}
 			
-			uni.vibrateShort({ type: 'medium' });
+			uni.vibrateShort({ type: 'light' });
 			
 			// 编辑昵称
 			uni.showModal({
@@ -173,34 +148,8 @@ export default {
 				success: async (res) => {
 					if (res.confirm && res.content && res.content.trim()) {
 						const newNickName = res.content.trim();
-						
-						// 询问是否修改头像
-						uni.showModal({
-							title: '修改头像',
-							content: '是否需要修改头像URL？',
-							confirmText: '修改',
-							cancelText: '不修改',
-							success: async (res2) => {
-								if (res2.confirm) {
-									// 修改头像
-									uni.showModal({
-										title: '修改头像URL',
-										editable: true,
-										placeholderText: this.userInfo.avatarUrl,
-										success: async (res3) => {
-											if (res3.confirm && res3.content && res3.content.trim()) {
-												await this.updateUserInfo(newNickName, res3.content.trim());
-											} else {
-												await this.updateUserInfo(newNickName, this.userInfo.avatarUrl);
-											}
-										}
-									});
-								} else {
-									// 只修改昵称
-									await this.updateUserInfo(newNickName, this.userInfo.avatarUrl);
-								}
-							}
-						});
+						// 只修改昵称，保持原头像
+						await this.updateUserInfo(newNickName, this.userInfo.avatarUrl);
 					}
 				}
 			});
@@ -294,7 +243,6 @@ export default {
 		exportData() {
 			uni.vibrateShort({ type: 'light' });
 			
-			const { getAllCheckins } = require('@/utils/storage.js');
 			const checkins = getAllCheckins();
 			
 			if (checkins.length === 0) {
