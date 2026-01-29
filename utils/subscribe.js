@@ -39,43 +39,6 @@ export async function requestSubscribeMessage(templateId) {
 }
 
 /**
- * 发送订阅消息（云函数）
- * @param {string} openid - 用户openid
- * @param {string} templateId - 模板ID
- * @param {Object} data - 消息内容
- * @returns {Promise<boolean>}
- */
-export async function sendSubscribeMessage(openid, templateId, data) {
-  if (!CLOUD_CONFIG.enabled) {
-    console.log('云开发未启用，无法发送订阅消息');
-    return false;
-  }
-  
-  try {
-    // 调用云函数发送消息
-    const result = await wx.cloud.callFunction({
-      name: 'sendMessage',
-      data: {
-        openid,
-        templateId,
-        data
-      }
-    });
-    
-    if (result.result.errCode === 0) {
-      console.log('订阅消息发送成功');
-      return true;
-    } else {
-      console.error('订阅消息发送失败:', result.result);
-      return false;
-    }
-  } catch (error) {
-    console.error('发送订阅消息异常:', error);
-    return false;
-  }
-}
-
-/**
  * 设置定时提醒
  * @param {string} time - 提醒时间 (HH:mm)
  */
@@ -114,7 +77,6 @@ export function checkReminderPermission() {
 
 export default {
   requestSubscribeMessage,
-  sendSubscribeMessage,
   setupReminder,
   cancelReminder,
   checkReminderPermission
