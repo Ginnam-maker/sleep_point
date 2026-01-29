@@ -954,7 +954,7 @@ export default {
 .detail-actions {
 	width: 100%;
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	gap: 16rpx;
 }
 
