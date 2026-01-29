@@ -58,34 +58,7 @@ export async function syncFromCloud() {
     return;
   }
   
-  try {
-    const result = await callCloudFunction('getStats', {});
-    
-    if (result.code === 0 && result.data) {
-      // 将云端数据保存到本地
-      const { checkins, achievements } = result.data;
-      
-      // 同步打卡记录
-      if (checkins && checkins.length > 0) {
-        checkins.forEach(checkin => {
-          saveLocalCheckin(checkin.date, {
-            mood: checkin.mood,
-            time: new Date(checkin.checkinTime).getTime(),
-            date: checkin.date
-          });
-        });
-      }
-      
-      // 同步成就数据
-      if (achievements && achievements.length > 0) {
-        uni.setStorageSync('achievements', achievements);
-      }
-      
-      console.log('云端数据同步成功');
-    }
-  } catch (error) {
-    console.error('云端数据同步失败:', error);
-  }
+  console.log('云端数据同步功能暂未实现');
 }
 
 /**
