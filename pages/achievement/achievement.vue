@@ -47,11 +47,13 @@
 					<text class="unlock-time-label">解锁时间</text>
 					<text class="unlock-time-text">{{ formatFullTime(selectedAchievement.unlockedAt) }}</text>
 				</view>
-				<view class="detail-close" @click="closeDetail">
-					<text class="close-btn">关闭</text>
+			<view class="detail-actions">
+				<view v-if="selectedAchievement && selectedAchievement.isUnlocked" class="action-btn primary" @click="shareAchievement">
+					<text class="btn-text">生成海报</text>
 				</view>
-				<view v-if="selectedAchievement && selectedAchievement.isUnlocked" class="detail-share" @click="shareAchievement">
-					<text class="share-btn">生成海报</text>
+				<view class="action-btn" @click="closeDetail">
+					<text class="btn-text">关闭</text>
+				</view>
 				</view>
 			</view>
 		</view>
@@ -370,45 +372,39 @@ export default {
 	color: #111827;
 }
 
-.detail-close {
+.detail-actions {
+	width: 100%;
+	display: flex;
+	gap: 16rpx;
 	margin-top: 16rpx;
-	width: 100%;
 }
 
-.detail-share {
-	margin-top: 12rpx;
-	width: 100%;
-}
-
-.close-btn {
-	display: block;
-	width: 100%;
-	text-align: center;
-	padding: 24rpx;
-	background-color: #000000;
-	color: #ffffff;
+.action-btn {
+	flex: 1;
+	background-color: #F3F4F6;
 	border-radius: 16rpx;
-	font-size: 28rpx;
-	font-weight: 600;
-}
-
-.close-btn:active {
-	opacity: 0.8;
-}
-
-.share-btn {
-	display: block;
-	width: 100%;
-	text-align: center;
 	padding: 24rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	transition: opacity 0.3s ease;
+}
+
+.action-btn.primary {
 	background-color: #3B82F6;
-	color: #ffffff;
-	border-radius: 16rpx;
-	font-size: 28rpx;
-	font-weight: 600;
 }
 
-.share-btn:active {
+.action-btn.primary .btn-text {
+	color: #ffffff;
+}
+
+.action-btn:active {
 	opacity: 0.8;
+}
+
+.btn-text {
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #111827;
 }
 </style>
