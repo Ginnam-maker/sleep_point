@@ -766,7 +766,9 @@ export default {
 .mood-emoji {
 	font-size: 32rpx;
 	position: absolute;
-	bottom: 4rpx;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
 /* 心情统计 */
