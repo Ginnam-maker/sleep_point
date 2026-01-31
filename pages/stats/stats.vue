@@ -111,182 +111,126 @@
 </template>
 
 <script>
-import { getAllCheckins, saveCheckin } from '@/utils/storage.js';
-import { calculateStreak, getMoodConfig, MOOD_CONFIG } from '@/utils/index.js';
+import { ref, computed } from 'vue';
+import { useCheckins } from '@/composables';
+import { useAuth } from '@/composables';
+import { getMoodConfig, MOOD_CONFIG } from '@/utils/index.js';
 
 export default {
-	data() {
-		return {
-			checkins: [],
-			streakDays: 0,
-			totalDays: 0,
-			currentMonth: '',
-			monthDays: 31,
-			monthStartDay: 0,
-			weekdays: ['日', '一', '二', '三', '四', '五', '六'],
-			showDetail: false,
-			detailInfo: {},
-			showEditModal: false,
-			selectedEditMood: '',
-			moodList: MOOD_CONFIG
-		}
-	},
-	onLoad() {
-		this.loadData();
-	},
-	onShow() {
-		// 每次显示页面时刷新数据
-		this.loadData();
-	},
-	methods: {
-		// 加载数据
-		loadData() {
-			const allCheckins = getAllCheckins();
-			const userInfo = uni.getStorageSync('userInfo');
-			
-			// 未登录用户限制只能看7天数据
-			if (!userInfo) {
-				const sevenDaysAgo = new Date();
-				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-				const sevenDaysAgoStr = this.formatDate(sevenDaysAgo);
-				
-				this.checkins = allCheckins.filter(checkin => {
-					return checkin.date >= sevenDaysAgoStr;
-				});
-				
-				// 提示用户登录可查看完整数据
-				if (allCheckins.length > this.checkins.length) {
-					// 有超过7天的数据，显示提示
-					this.showLoginTip();
-				}
-			} else {
-				this.checkins = allCheckins;
-			}
-			
-			this.calculateMetrics();
-			this.initCalendar();
+	setup() {
+		// ========== 使用 Composables ==========
+		const { isLoggedIn } = useAuth();
+		const { 
+			checkins, 
+			streakDays, 
+			totalDays, 
+			loadCheckins,
+			hasCheckinOnDate,
+			getCheckinByDate,
+			updateCheckin,
+			formatDateString
+		} = useCheckins({ limitDays: 7 });
 
-			const hasShownTip = uni.getStorageSync('hasShownStatsTip');
-			if (hasShownTip) return;
+		// ========== 页面特有状态 ==========
+		const currentMonth = ref('');
+		const monthDays = ref(31);
+		const monthStartDay = ref(0);
+		const weekdays = ref(['日', '一', '二', '三', '四', '五', '六']);
+		const showDetail = ref(false);
+		const detailInfo = ref({});
+		const showEditModal = ref(false);
+		const selectedEditMood = ref('');
+		const moodList = ref(MOOD_CONFIG);
+
+		// ========== 初始化方法 ==========
+		const loadData = async () => {
+			// 检查登录状态，决定是否应用限制
+			const shouldLimit = !isLoggedIn.value;
+			await loadCheckins(shouldLimit);
 			
-			setTimeout(() => {
-				uni.showModal({
-					title: '试用模式限制',
-					content: '当前为试用模式，仅显示最近7天数据。登录后可查看完整历史数据和更多统计功能。',
-					confirmText: '去登录',
-					cancelText: '稍后再说',
-					success: (res) => {
-						if (res.confirm) {
-							uni.navigateTo({
-								url: '/pages/login/login'
-							});
-						}
-						// 标记已显示
-						uni.setStorageSync('hasShownStatsTip', true);
-					}
-				});
-			}, 500);
-		},
-		
-		// 格式化日期为YYYY-MM-DD
-		formatDate(date) {
-			const year = date.getFullYear();
-			const month = String(date.getMonth() + 1).padStart(2, '0');
-			const day = String(date.getDate()).padStart(2, '0');
-			return `${year}-${month}-${day}`;
-		},
-		
-		// 计算核心指标
-		calculateMetrics() {
-			this.totalDays = this.checkins.length;
-			this.streakDays = this.calculateStreakDays();
-		},
-		
-		// 计算连续打卡天数
-		calculateStreakDays() {
-			if (this.checkins.length === 0) return 0;
+			initCalendar();
 			
-			let streak = 0;
-			let currentDate = new Date();
-			currentDate.setHours(0, 0, 0, 0);
-			
-			const sortedCheckins = [...this.checkins].sort((a, b) => {
-				return new Date(b.date) - new Date(a.date);
-			});
-			
-			for (let checkin of sortedCheckins) {
-				const checkinDate = new Date(checkin.date);
-				checkinDate.setHours(0, 0, 0, 0);
-				
-				const diffDays = Math.floor((currentDate - checkinDate) / (1000 * 60 * 60 * 24));
-				
-				if (diffDays === streak) {
-					streak++;
-					currentDate.setDate(currentDate.getDate() - 1);
-				} else {
-					break;
+			// 首次显示未登录提示
+			if (shouldLimit) {
+				const hasShownTip = uni.getStorageSync('hasShownStatsTip');
+				if (!hasShownTip) {
+					setTimeout(() => {
+						uni.showModal({
+							title: '试用模式限制',
+							content: '当前为试用模式，仅显示最近7天数据。登录后可查看完整历史数据和更多统计功能。',
+							confirmText: '去登录',
+							cancelText: '稍后再说',
+							success: (res) => {
+								if (res.confirm) {
+									uni.navigateTo({
+										url: '/pages/login/login'
+									});
+								}
+								uni.setStorageSync('hasShownStatsTip', true);
+							}
+						});
+					}, 500);
 				}
 			}
-			
-			return streak;
-		},
-		
-		// 初始化日历
-		initCalendar() {
+		};
+
+		// ========== 日历相关方法 ==========
+		const initCalendar = () => {
 			const now = new Date();
 			const year = now.getFullYear();
 			const month = now.getMonth();
 			
-			this.currentMonth = `${year}年${month + 1}月`;
+			currentMonth.value = `${year}年${month + 1}月`;
 			
 			// 获取本月第一天是星期几
 			const firstDay = new Date(year, month, 1);
-			this.monthStartDay = firstDay.getDay();
+			monthStartDay.value = firstDay.getDay();
 			
 			// 获取本月天数
 			const lastDay = new Date(year, month + 1, 0);
-			this.monthDays = lastDay.getDate();
-		},
+			monthDays.value = lastDay.getDate();
+		};
 		
 		// 判断是否是今天
-		isToday(day) {
+		const isToday = (day) => {
 			const now = new Date();
 			return now.getDate() === day && 
 				   now.getMonth() === new Date().getMonth();
-		},
+		};
 		
 		// 判断某天是否有打卡
-		hasCheckin(day) {
+		const hasCheckin = (day) => {
 			const now = new Date();
 			const year = now.getFullYear();
 			const month = String(now.getMonth() + 1).padStart(2, '0');
 			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
 			
-			return this.checkins.some(c => c.date === dateStr);
-		},
+			return hasCheckinOnDate(dateStr);
+		};
 		
 		// 获取某天的心情表情
-		getMoodEmoji(day) {
+		const getMoodEmoji = (day) => {
 			const now = new Date();
 			const year = now.getFullYear();
 			const month = String(now.getMonth() + 1).padStart(2, '0');
 			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
 			
-			const checkin = this.checkins.find(c => c.date === dateStr);
+			const checkin = getCheckinByDate(dateStr);
 			if (!checkin) return '';
 			
 			const config = getMoodConfig(checkin.mood);
 			return config.emoji;
-		},
-		
+		};
+
+		// ========== 交互操作方法 ==========
 		// 处理日期点击
-		handleDateClick(day) {
+		const handleDateClick = (day) => {
 			const now = new Date();
 			const year = now.getFullYear();
 			const month = String(now.getMonth() + 1).padStart(2, '0');
 			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
 			
-			const checkin = this.checkins.find(c => c.date === dateStr);
+			const checkin = getCheckinByDate(dateStr);
 			
 			if (!checkin) {
 				// 未打卡日期
@@ -315,7 +259,7 @@ export default {
 			const timeText = `${hours}:${minutes}`;
 			
 			// 设置详情信息
-			this.detailInfo = {
+			detailInfo.value = {
 				date: dateStr,
 				dateText: dateText,
 				emoji: moodConfig.emoji,
@@ -324,44 +268,44 @@ export default {
 				checkin: checkin
 			};
 			
-			this.showDetail = true;
-		},
+			showDetail.value = true;
+		};
 		
 		// 关闭详情
-		closeDetail() {
-			this.showDetail = false;
-		},
+		const closeDetail = () => {
+			showDetail.value = false;
+		};
 		
 		// 修改打卡
-		editCheckin() {
+		const editCheckin = () => {
 			// 获取当前心情
-			this.selectedEditMood = this.detailInfo.checkin.mood;
-			this.showEditModal = true;
+			selectedEditMood.value = detailInfo.value.checkin.mood;
+			showEditModal.value = true;
 			
 			// 震动反馈
 			uni.vibrateShort({
 				type: 'light'
 			});
-		},
+		};
 		
 		// 选择编辑的心情
-		selectEditMood(moodId) {
-			this.selectedEditMood = moodId;
+		const selectEditMood = (moodId) => {
+			selectedEditMood.value = moodId;
 			
 			// 震动反馈
 			uni.vibrateShort({
 				type: 'light'
 			});
-		},
+		};
 		
 		// 关闭编辑弹窗
-		closeEditModal() {
-			this.showEditModal = false;
-		},
+		const closeEditModal = () => {
+			showEditModal.value = false;
+		};
 		
 		// 确认修改
-		confirmEdit() {
-			if (!this.selectedEditMood) {
+		const confirmEdit = async () => {
+			if (!selectedEditMood.value) {
 				uni.showToast({
 					title: '请选择心情',
 					icon: 'none'
@@ -369,35 +313,75 @@ export default {
 				return;
 			}
 			
-			// 更新打卡记录
-			const updatedCheckin = {
-				...this.detailInfo.checkin,
-				mood: this.selectedEditMood,
-				isModified: true,
-				modifiedAt: Date.now()
-			};
+			try {
+				// 使用 composable 的更新方法
+				await updateCheckin(detailInfo.value.date, selectedEditMood.value);
+				
+				// 震动反馈
+				uni.vibrateLong();
+				
+				// 提示成功
+				uni.showToast({
+					title: '修改成功',
+					icon: 'success'
+				});
+				
+				// 关闭弹窗
+				showEditModal.value = false;
+				showDetail.value = false;
+				
+				// 重新加载数据
+				setTimeout(() => {
+					loadData();
+				}, 500);
+			} catch (err) {
+				uni.showToast({
+					title: '修改失败',
+					icon: 'none'
+				});
+			}
+		};
+
+		// ========== 返回给模板使用 ==========
+		return {
+			// 来自 composables 的状态
+			checkins,
+			streakDays,
+			totalDays,
 			
-			// 保存到本地存储
-			saveCheckin(this.detailInfo.date, updatedCheckin);
+			// 页面特有状态
+			currentMonth,
+			monthDays,
+			monthStartDay,
+			weekdays,
+			showDetail,
+			detailInfo,
+			showEditModal,
+			selectedEditMood,
+			moodList,
 			
-			// 震动反馈
-			uni.vibrateLong();
-			
-			// 提示成功
-			uni.showToast({
-				title: '修改成功',
-				icon: 'success'
-			});
-			
-			// 关闭弹窗
-			this.showEditModal = false;
-			this.showDetail = false;
-			
-			// 重新加载数据
-			setTimeout(() => {
-				this.loadData();
-			}, 500);
-		}
+			// 方法
+			loadData,
+			initCalendar,
+			isToday,
+			hasCheckin,
+			getMoodEmoji,
+			handleDateClick,
+			closeDetail,
+			editCheckin,
+			selectEditMood,
+			closeEditModal,
+			confirmEdit
+		};
+	},
+	
+	onLoad() {
+		this.loadData();
+	},
+	
+	onShow() {
+		// 每次显示页面时刷新数据
+		this.loadData();
 	}
 }
 </script>
