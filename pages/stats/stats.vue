@@ -55,64 +55,6 @@
 			</view>
 		</view>
 
-		<!-- 心情统计 -->
-		<view class="mood-section">
-			<view class="section-header">
-				<text class="section-title">心情分布</text>
-			</view>
-			
-			<!-- 饼图 -->
-			<!-- 暂时隐藏，待修复
-			<view v-if="moodChartData.series.length > 0" class="chart-container">
-				<qiun-ucharts 
-					type="pie" 
-					:opts="moodChartOpts" 
-					:chartData="moodChartData"
-					canvasId="moodPieChart"
-					:cWidth="chartWidth"
-					:cHeight="260"
-				/>
-			</view>
-			-->
-			
-			<view class="mood-stats">
-				<view 
-					v-for="mood in moodStats" 
-					:key="mood.id"
-					class="mood-stat-item"
-				>
-					<text class="mood-emoji-large">{{ mood.emoji }}</text>
-					<view class="mood-bar-container">
-						<view class="mood-bar" :style="{ width: mood.percentage + '%', backgroundColor: mood.color }"></view>
-					</view>
-					<text class="mood-count">{{ mood.count }}次</text>
-				</view>
-			</view>
-		</view>
-		
-		<!-- 睡眠趋势 - 暂时隐藏，待修复
-		<view class="trend-section">
-			<view class="section-header">
-				<text class="section-title">入睡趋势</text>
-				<text class="section-subtitle">最近7天</text>
-			</view>
-			
-			<view v-if="trendChartData.series.length > 0" class="chart-container">
-				<qiun-ucharts 
-					type="line" 
-					:opts="trendChartOpts" 
-					:chartData="trendChartData"
-					canvasId="trendLineChart"
-					:cWidth="chartWidth"
-					:cHeight="200"
-				/>
-			</view>
-			<view v-else class="empty-chart">
-				<text class="empty-text">暂无足够数据</text>
-			</view>
-		</view>
-		-->
-		
 		<!-- 打卡详情弹窗 -->
 		<view v-if="showDetail" class="detail-modal" @click="closeDetail">
 			<view class="detail-content" @click.stop>
@@ -171,12 +113,8 @@
 <script>
 import { getAllCheckins, saveCheckin } from '@/utils/storage.js';
 import { calculateStreak, getMoodConfig, MOOD_CONFIG } from '@/utils/index.js';
-import qiunUcharts from '@/components/qiun-ucharts.vue';
 
 export default {
-	components: {
-		qiunUcharts
-	},
 	data() {
 		return {
 			checkins: [],
@@ -186,71 +124,14 @@ export default {
 			monthDays: 31,
 			monthStartDay: 0,
 			weekdays: ['日', '一', '二', '三', '四', '五', '六'],
-			moodStats: [],
 			showDetail: false,
 			detailInfo: {},
 			showEditModal: false,
 			selectedEditMood: '',
-			moodList: MOOD_CONFIG,
-			// 图表宽度
-			chartWidth: 300,
-			// 图表数据
-			moodChartData: {
-				series: []
-			},
-			moodChartOpts: {
-				color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'],
-				padding: [5, 5, 5, 5],
-				legend: {
-					show: false
-				},
-				extra: {
-					pie: {
-						activeOpacity: 0.5,
-						offsetAngle: 0,
-						labelWidth: 15,
-						border: true,
-						borderWidth: 2,
-						borderColor: '#FFFFFF'
-					}
-				}
-			},
-			trendChartData: {
-				categories: [],
-				series: []
-			},
-			trendChartOpts: {
-				color: ['#000000'],
-				padding: [15, 15, 0, 15],
-				legend: {
-					show: false
-				},
-				xAxis: {
-					disableGrid: true,
-					fontSize: 10
-				},
-				yAxis: {
-					data: [
-						{ min: 20, max: 26 }
-					],
-					fontSize: 10,
-					format: (val) => val + ':00'
-				},
-				extra: {
-					line: {
-						type: 'curve',
-						width: 2,
-						activeType: 'hollow'
-					}
-				}
-			}
+			moodList: MOOD_CONFIG
 		}
 	},
 	onLoad() {
-		// 计算图表宽度
-		const systemInfo = uni.getSystemInfoSync();
-		this.chartWidth = systemInfo.windowWidth - 96; // 减去容器padding和margin
-		
 		this.loadData();
 	},
 	onShow() {
@@ -284,14 +165,7 @@ export default {
 			
 			this.calculateMetrics();
 			this.initCalendar();
-			this.calculateMoodStats();
-			this.prepareMoodChartData();
-			this.prepareTrendChartData();
-		},
-		
-		// 显示登录提示
-		showLoginTip() {
-			// 检查是否已经显示过提示
+
 			const hasShownTip = uni.getStorageSync('hasShownStatsTip');
 			if (hasShownTip) return;
 			
@@ -523,98 +397,6 @@ export default {
 			setTimeout(() => {
 				this.loadData();
 			}, 500);
-		},
-		
-		// 计算心情统计
-		calculateMoodStats() {
-			const moodCount = {
-				happy: 0,
-				content: 0,
-				sad: 0,
-				tired: 0,
-				angry: 0,
-				worried: 0
-			};
-			
-			this.checkins.forEach(checkin => {
-				if (moodCount[checkin.mood] !== undefined) {
-					moodCount[checkin.mood]++;
-				}
-			});
-			
-			const total = this.checkins.length || 1;
-			
-			this.moodStats = [
-				{ id: 'happy', emoji: '😊', label: '高兴', count: moodCount.happy, color: '#FCD34D' },
-				{ id: 'content', emoji: '😌', label: '满足', count: moodCount.content, color: '#A7F3D0' },
-				{ id: 'sad', emoji: '😢', label: '难过', count: moodCount.sad, color: '#93C5FD' },
-				{ id: 'tired', emoji: '😴', label: '疲惫', count: moodCount.tired, color: '#C4B5FD' },
-				{ id: 'angry', emoji: '😠', label: '愤怒', count: moodCount.angry, color: '#FCA5A5' },
-				{ id: 'worried', emoji: '😰', label: '担忧', count: moodCount.worried, color: '#D1D5DB' }
-			].map(mood => ({
-				...mood,
-				percentage: (mood.count / total * 100).toFixed(1)
-			})).filter(mood => mood.count > 0);
-		},
-		
-		// 准备心情饼图数据
-		prepareMoodChartData() {
-			if (this.moodStats.length === 0) {
-				this.moodChartData = { series: [] };
-				return;
-			}
-			
-			const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
-			
-			this.moodChartData = {
-				series: [{
-					data: this.moodStats.map((mood, index) => ({
-						name: `${mood.emoji} ${mood.label}`,
-						value: mood.count,
-						color: colors[index % colors.length]
-					}))
-				}]
-			};
-		},
-		
-		// 准备睡眠趋势折线图数据
-		prepareTrendChartData() {
-			if (this.checkins.length === 0) {
-				this.trendChartData = { categories: [], series: [] };
-				return;
-			}
-			
-			// 获取最近7天的打卡记录
-			const sortedCheckins = [...this.checkins]
-				.sort((a, b) => new Date(a.date) - new Date(b.date))
-				.slice(-7);
-			
-			const categories = [];
-			const data = [];
-			
-			sortedCheckins.forEach(checkin => {
-				// 格式化日期为 MM/DD
-				const date = new Date(checkin.date);
-				const month = date.getMonth() + 1;
-				const day = date.getDate();
-				categories.push(`${month}/${day}`);
-				
-				// 将时间转换为小时数（如 22.5 表示 22:30）
-				const time = new Date(checkin.time);
-				const hours = time.getHours();
-				const minutes = time.getMinutes();
-				const hourValue = hours + minutes / 60;
-				
-				data.push(hourValue);
-			});
-			
-			this.trendChartData = {
-				categories: categories,
-				series: [{
-					name: '入睡时间',
-					data: data
-				}]
-			};
 		}
 	}
 }
@@ -679,8 +461,7 @@ export default {
 }
 
 /* 区块标题 */
-.calendar-section,
-.mood-section {
+.calendar-section {
 	margin-bottom: 48rpx;
 }
 
@@ -769,87 +550,6 @@ export default {
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-}
-
-/* 心情统计 */
-.mood-stats {
-	display: flex;
-	flex-direction: column;
-	gap: 20rpx;
-}
-
-.mood-stat-item {
-	display: flex;
-	align-items: center;
-	gap: 16rpx;
-}
-
-.mood-emoji-large {
-	font-size: 48rpx;
-	width: 64rpx;
-	text-align: center;
-}
-
-.mood-bar-container {
-	flex: 1;
-	height: 32rpx;
-	background-color: #F3F4F6;
-	border-radius: 16rpx;
-	overflow: hidden;
-}
-
-.mood-bar {
-	height: 100%;
-	border-radius: 16rpx;
-	transition: width 0.3s ease;
-}
-
-.mood-count {
-	font-size: 28rpx;
-	color: #6B7280;
-	width: 80rpx;
-	text-align: right;
-}
-
-/* 图表容器 */
-.chart-container {
-	background-color: #F9FAFB;
-	border-radius: 24rpx;
-	padding: 24rpx 8rpx;
-	margin-top: 24rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	overflow: hidden;
-}
-
-.empty-chart {
-	background-color: #F9FAFB;
-	border-radius: 24rpx;
-	padding: 80rpx 32rpx;
-	margin-top: 24rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-
-.empty-text {
-	font-size: 28rpx;
-	color: #9CA3AF;
-}
-
-/* 睡眠趋势区 */
-.trend-section {
-	background-color: #ffffff;
-	border-radius: 24rpx;
-	padding: 32rpx 24rpx;
-	margin-bottom: 32rpx;
-}
-
-.section-subtitle {
-	font-size: 24rpx;
-	color: #9CA3AF;
-	margin-left: auto;
 }
 
 /* 详情弹窗 */
