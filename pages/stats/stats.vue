@@ -112,30 +112,37 @@
 
 <script>
 import { ref, computed } from 'vue';
-import { useCheckins } from '@/composables';
-import { useAuth } from '@/composables';
+import { useCheckins, useAuth, useCalendar } from '@/composables';
 import { getMoodConfig, MOOD_CONFIG } from '@/utils/index.js';
 
 export default {
 	setup() {
 		// ========== 使用 Composables ==========
 		const { isLoggedIn } = useAuth();
+		const checkinsComposable = useCheckins({ limitDays: 7 });
 		const { 
 			checkins, 
 			streakDays, 
 			totalDays, 
 			loadCheckins,
-			hasCheckinOnDate,
 			getCheckinByDate,
-			updateCheckin,
-			formatDateString
-		} = useCheckins({ limitDays: 7 });
+			updateCheckin
+		} = checkinsComposable;
+		
+		// 使用日历 composable
+		const {
+			currentMonth,
+			monthDays,
+			monthStartDay,
+			weekdays,
+			isToday,
+			hasCheckin,
+			getMoodEmoji,
+			getDateString,
+			initCalendar
+		} = useCalendar({ checkinsComposable });
 
 		// ========== 页面特有状态 ==========
-		const currentMonth = ref('');
-		const monthDays = ref(31);
-		const monthStartDay = ref(0);
-		const weekdays = ref(['日', '一', '二', '三', '四', '五', '六']);
 		const showDetail = ref(false);
 		const detailInfo = ref({});
 		const showEditModal = ref(false);
@@ -174,62 +181,10 @@ export default {
 			}
 		};
 
-		// ========== 日历相关方法 ==========
-		const initCalendar = () => {
-			const now = new Date();
-			const year = now.getFullYear();
-			const month = now.getMonth();
-			
-			currentMonth.value = `${year}年${month + 1}月`;
-			
-			// 获取本月第一天是星期几
-			const firstDay = new Date(year, month, 1);
-			monthStartDay.value = firstDay.getDay();
-			
-			// 获取本月天数
-			const lastDay = new Date(year, month + 1, 0);
-			monthDays.value = lastDay.getDate();
-		};
-		
-		// 判断是否是今天
-		const isToday = (day) => {
-			const now = new Date();
-			return now.getDate() === day && 
-				   now.getMonth() === new Date().getMonth();
-		};
-		
-		// 判断某天是否有打卡
-		const hasCheckin = (day) => {
-			const now = new Date();
-			const year = now.getFullYear();
-			const month = String(now.getMonth() + 1).padStart(2, '0');
-			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-			
-			return hasCheckinOnDate(dateStr);
-		};
-		
-		// 获取某天的心情表情
-		const getMoodEmoji = (day) => {
-			const now = new Date();
-			const year = now.getFullYear();
-			const month = String(now.getMonth() + 1).padStart(2, '0');
-			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-			
-			const checkin = getCheckinByDate(dateStr);
-			if (!checkin) return '';
-			
-			const config = getMoodConfig(checkin.mood);
-			return config.emoji;
-		};
-
 		// ========== 交互操作方法 ==========
 		// 处理日期点击
 		const handleDateClick = (day) => {
-			const now = new Date();
-			const year = now.getFullYear();
-			const month = String(now.getMonth() + 1).padStart(2, '0');
-			const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
-			
+			const dateStr = getDateString(day);
 			const checkin = getCheckinByDate(dateStr);
 			
 			if (!checkin) {
@@ -253,7 +208,7 @@ export default {
 			const dateObj = new Date(checkin.date);
 			const timeObj = new Date(checkin.time);
 			
-			const dateText = `${year}年${parseInt(month)}月${day}日`;
+			const dateText = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
 			const hours = String(timeObj.getHours()).padStart(2, '0');
 			const minutes = String(timeObj.getMinutes()).padStart(2, '0');
 			const timeText = `${hours}:${minutes}`;
@@ -344,16 +299,21 @@ export default {
 
 		// ========== 返回给模板使用 ==========
 		return {
-			// 来自 composables 的状态
+			// 来自 useCheckins 的状态
 			checkins,
 			streakDays,
 			totalDays,
 			
-			// 页面特有状态
+			// 来自 useCalendar 的状态和方法
 			currentMonth,
 			monthDays,
 			monthStartDay,
 			weekdays,
+			isToday,
+			hasCheckin,
+			getMoodEmoji,
+			
+			// 页面特有状态
 			showDetail,
 			detailInfo,
 			showEditModal,
@@ -362,10 +322,6 @@ export default {
 			
 			// 方法
 			loadData,
-			initCalendar,
-			isToday,
-			hasCheckin,
-			getMoodEmoji,
 			handleDateClick,
 			closeDetail,
 			editCheckin,
@@ -386,371 +342,4 @@ export default {
 }
 </script>
 
-<style>
-.stats-container {
-	min-height: 100vh;
-	background-color: #ffffff;
-	padding: 32rpx;
-}
-
-/* 核心指标 */
-.metrics-section {
-	display: flex;
-	gap: 24rpx;
-	margin-bottom: 48rpx;
-}
-
-.metric-card {
-	flex: 1;
-	background-color: #F3F4F6;
-	border-radius: 24rpx;
-	padding: 32rpx;
-	display: flex;
-	align-items: center;
-	gap: 20rpx;
-}
-
-.metric-card.primary {
-	background-color: #000000;
-	color: #ffffff;
-}
-
-.metric-icon {
-	font-size: 56rpx;
-}
-
-.metric-info {
-	display: flex;
-	flex-direction: column;
-}
-
-.metric-value {
-	font-size: 48rpx;
-	font-weight: bold;
-	color: #111827;
-}
-
-.metric-card.primary .metric-value {
-	color: #ffffff;
-}
-
-.metric-label {
-	font-size: 24rpx;
-	color: #6B7280;
-	margin-top: 4rpx;
-}
-
-.metric-card.primary .metric-label {
-	color: #D1D5DB;
-}
-
-/* 区块标题 */
-.calendar-section {
-	margin-bottom: 48rpx;
-}
-
-.section-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 24rpx;
-}
-
-.section-title {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #111827;
-}
-
-.month-text {
-	font-size: 28rpx;
-	color: #6B7280;
-}
-
-/* 日历 */
-.calendar-grid {
-	background-color: #F3F4F6;
-	border-radius: 24rpx;
-	padding: 24rpx;
-}
-
-.weekday-row {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	margin-bottom: 16rpx;
-}
-
-.weekday {
-	text-align: center;
-	font-size: 24rpx;
-	color: #6B7280;
-	padding: 8rpx 0;
-}
-
-.date-row {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	gap: 8rpx;
-}
-
-.date-cell {
-	aspect-ratio: 1;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	border-radius: 12rpx;
-	position: relative;
-	transition: all 0.3s ease;
-	cursor: pointer;
-}
-
-.date-cell.empty {
-	background-color: transparent;
-}
-
-.date-cell.today {
-	background-color: #ffffff;
-	border: 2rpx solid #000000;
-}
-
-.date-cell.checked {
-	background-color: #ffffff;
-}
-
-.date-cell.checked:active {
-	transform: scale(0.9);
-	background-color: #F3F4F6;
-}
-
-.date-number {
-	font-size: 24rpx;
-	color: #111827;
-}
-
-.mood-emoji {
-	font-size: 32rpx;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-}
-
-/* 详情弹窗 */
-.detail-modal {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.6);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1000;
-	animation: fade-in 0.3s ease;
-}
-
-@keyframes fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-.detail-content {
-	background-color: #ffffff;
-	border-radius: 32rpx;
-	padding: 48rpx 32rpx;
-	margin: 0 48rpx;
-	width: 560rpx;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes slide-up {
-	from {
-		transform: translateY(100rpx);
-		opacity: 0;
-	}
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
-}
-
-.detail-header {
-	margin-bottom: 32rpx;
-}
-
-.detail-date {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #111827;
-}
-
-.detail-emoji {
-	font-size: 120rpx;
-	margin-bottom: 24rpx;
-	animation: emoji-bounce 0.6s ease;
-}
-
-@keyframes emoji-bounce {
-	0%, 100% {
-		transform: scale(1);
-	}
-	50% {
-		transform: scale(1.2);
-	}
-}
-
-.detail-mood-name {
-	font-size: 36rpx;
-	font-weight: 600;
-	color: #111827;
-	margin-bottom: 32rpx;
-}
-
-.detail-time {
-	width: 100%;
-	background-color: #F3F4F6;
-	border-radius: 16rpx;
-	padding: 24rpx;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 32rpx;
-}
-
-.time-label {
-	font-size: 28rpx;
-	color: #6B7280;
-}
-
-.time-value {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #111827;
-}
-
-.detail-actions {
-	width: 100%;
-	display: flex;
-	flex-direction: row;
-	gap: 16rpx;
-}
-
-.action-btn {
-	width: 100%;
-	background-color: #000000;
-	border-radius: 16rpx;
-	padding: 24rpx;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	transition: opacity 0.3s ease;
-}
-
-.action-btn.secondary {
-	background-color: #F3F4F6;
-}
-
-.action-btn.secondary .btn-text {
-	color: #111827;
-}
-
-.action-btn:active {
-	opacity: 0.8;
-}
-
-.btn-text {
-	font-size: 28rpx;
-	font-weight: 600;
-	color: #ffffff;
-}
-
-/* 修改弹窗 */
-.edit-content {
-	background-color: #ffffff;
-	border-radius: 32rpx;
-	padding: 48rpx 32rpx;
-	margin: 0 48rpx;
-	width: 600rpx;
-	max-height: 80vh;
-	overflow-y: auto;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.edit-title {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #111827;
-	margin-bottom: 8rpx;
-}
-
-.edit-subtitle {
-	font-size: 28rpx;
-	color: #6B7280;
-	margin-bottom: 32rpx;
-}
-
-.mood-grid-edit {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 16rpx;
-	width: 100%;
-	margin-bottom: 32rpx;
-}
-
-.mood-card-edit {
-	background-color: #F3F4F6;
-	border: 2rpx solid #F3F4F6;
-	border-radius: 16rpx;
-	padding: 24rpx 12rpx;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8rpx;
-	transition: all 0.3s ease;
-}
-
-.mood-card-edit:active {
-	transform: scale(0.95);
-}
-
-.mood-card-edit.selected {
-	background-color: #000000;
-	border-color: #000000;
-}
-
-.mood-emoji-edit {
-	font-size: 48rpx;
-}
-
-.mood-label-edit {
-	font-size: 24rpx;
-	color: #111827;
-	font-weight: 500;
-}
-
-.mood-card-edit.selected .mood-label-edit {
-	color: #ffffff;
-}
-
-.edit-actions {
-	width: 100%;
-	display: flex;
-	gap: 16rpx;
-}
-
-.edit-actions .action-btn {
-	flex: 1;
-}
-</style>
+<style src="./stats.scss"></style>
